@@ -1,0 +1,5 @@
+[ {"idTournee":"42248","date_tournee":"2021-01-10 00:00:00","hub":"1","secteur": "Bab Ezzouar","livreur": "Khaled Hamizi","performance": "0.9"},
+    {"idTournee":"42249","date_tournee":"2021-01-10 00:00:00","hub":"1","secteur": "Alger centre","livreur": "Amine Yassad","performance": "0.7"},
+    {"idTournee":"42251","date_tournee":"2021-01-10 00:00:00","hub":"1","secteur": "Rouiba","livreur": "Sami Yousfi","performance": "0.8"},
+    {"idTournee":"42252","date_tournee":"2021-01-10 00:00:00","hub":"1","secteur": "Kouba","livreur": "Mohammed Riadi","performance": "0.1"}
+  ]

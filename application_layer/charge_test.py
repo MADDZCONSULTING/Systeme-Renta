@@ -10,7 +10,6 @@ def last_day_of_month(date_value):
 
 
 def charge_fixe_update():
-    print("hola")
     today = datetime.today().date()
     tomorrow = datetime.now() + timedelta(1)
     if (today == last_day_of_month(today)):

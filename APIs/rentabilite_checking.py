@@ -3,94 +3,90 @@ from datetime import date
 from flask import jsonify
 from  flask_restful import  Resource, request
 import requests
+import os,Data
 
-from models.livraison import LivraisonSchema
-from models.tournee import TourneeSchema
+from models.livraison_test import LivraisonTestSchema
+from models.tournee_test import TourneeTestSchema
 
 
 class calculRentabilite(Resource):
 
-    def post(self):
+    def get(self):
      #initialisation
      liste_rentabilite=[]
      tournee_rentable=0
      tournee_non_rentable=0
      today=date.today()
+
      #Ramener la charge fixe
-     charge_jour=100
-     print(today)
-     url = "https://dev.easy-relay.com/api/mob2/api.php?action=getTourneeDay&"+"day=2021-02-10"+"&etat=3&type=l"
+     charge_jour=150
+     #Ramener les tournées pending
+     with open('./Data/tournees.json', 'r') as file:
+         data = file.read()
+     tournees= json.loads(data)
 
-     payload = {}
-     headers = {
-         'email': 'dm@er.com',
-         'mdp': 'test'
-     }
 
-     response = requests.request("GET", url, headers=headers, data=payload)
-     tournees= response.json()
-     print(tournees)
+     #Désialiser chaque tournée
      for tournee in tournees:
          rentabilite=0
-         schema = TourneeSchema()
+         schema = TourneeTestSchema()
          result = schema.load(tournee)# deserialize the object
          id_tournee=result.idTournee
-         url = "https://dev.easy-relay.com/api/mob2/api.php?action=getLvTournee&id_tournee="+id_tournee
 
-         payload = {}
-         headers = {
-             'email': 'dm@er.com',
-             'mdp': 'test'
-         }
 
-         response_livraisons = requests.request("GET", url, headers=headers, data=payload)
-         liste_livraison=response_livraisons.json()
+         #Ramener les livraisons de chaque tournée
+         with open('./Data/livraisons.json', 'r',encoding='cp437') as file:
+             data1 = file.read()
+         livraisons=json.loads(data1)
+
          r=0
-         for livraison in liste_livraison:
-             schema_livraison = LivraisonSchema()
+         #Désiarilser chaque livraison
+
+         for livraison in livraisons:
+             schema_livraison = LivraisonTestSchema()
              result_livraison = schema_livraison.load(livraison)  # deserialize the object
+
+             if result_livraison.id_tournee== id_tournee:
+
+                 url = "http://127.0.0.1:5000/predict_livraison"
+                 payload = json.dumps({
+                     "day": 20,
+                     "month": 1,
+                     "hub": int(result.hub),
+                     "commune": int(result_livraison.commune),
+                     "performance": float(result.performance)
+                 })
+                 headers = {
+                     'Content-Type': 'application/json'
+                 }
+                 response_prediction = requests.request("POST", url, headers=headers, data=payload)
+
+                 if response_prediction != 1:
+
+                     r = r + ((result_livraison.prix_livraison_vendeur - (300 + charge_jour)) * 0.8)
+                 else:
+                     r = r + result_livraison.prix_livraison_vendeur - (300 + charge_jour)
+                 # calculer le cumul R
              #vérifier si la livraison sera livré ou pas
-             url = "http://127.0.0.1:5000/predict_livraison"
 
-             payload = json.dumps({
-                 "day": 10,
-                 "month": 2,
-                 "hub": result.hub,
-                 "commune": result_livraison.commune_client,
-                 "performance": 0.8
-             })
-             headers = {
-                 'Content-Type': 'application/json'
-             }
-             response_prediction = requests.request("POST", url, headers=headers, data=payload)
-
-             if response_prediction != 1:
-                print("hahaha"+str(type(r)))
-                print("hahaha"+str(r))
-                #print(type(result_livraison.prix_livraison))
-                #print(type(charge_jour))
-                r = r +( (result_livraison.prix_livraison - (200 + charge_jour)) * 0.8)
-             else:
-                r= r + result_livraison.prix_livraison - (200 + charge_jour)
-             #calculer le cumul R
 
          if (r>0):
              tournee_rentable=tournee_rentable+1
              #construction de la liste JSON
              liste_rentabilite.append({
                 "Id": id_tournee,
-                "Livreur": "Khalil Fadi",
-                "Secteur": "Alger",
+                "Livreur": result.livreur,
+                "Secteur": result.secteur,
                 "Rentabilité":"Oui"
                })
          else:
              tournee_non_rentable=tournee_non_rentable+1
              liste_rentabilite.append({
                  "Id": id_tournee,
-                 "Livreur": "Khalil Fadi",
-                 "Secteur": "Alger",
+                 "Livreur": result.livreur,
+                 "Secteur": result.secteur,
                  "Rentabilité": "Non"
              })
-
-     return jsonify(data=(liste_rentabilite,tournee_rentable,tournee_non_rentable)
-        )
+     response= jsonify(data=(liste_rentabilite,tournee_rentable,tournee_non_rentable))
+     response.headers.add('Access-Control-Allow-Origin', '*')
+     return response

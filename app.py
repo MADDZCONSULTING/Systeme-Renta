@@ -1,9 +1,13 @@
 from datetime import datetime
 
 from flask import Flask
+from flask_cors import CORS
 from  flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from APIs.rentabilite_checking import calculRentabilite
+from Graphs.Rentabilite_mois import RentabiliteMois
+from Graphs.Rentabilite_jour import RentabiliteJour
+from Graphs.simulation import Simulation
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
@@ -16,14 +20,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 #initailize the db
 db = SQLAlchemy(app)
 
-from Functions.charge_test import charge_fixe_update
+from application_layer.charge_test import charge_fixe_update
 from APIs.charge_fixe_jour import  Charge
+
 from models.chargeFixeUpdated import ChargeFixeUpdated
 
 #Adding APIs
 api= Api(app)
 api.add_resource(calculRentabilite,"/rentabilite")
 api.add_resource(Charge,"/chargefixe")
+api.add_resource(RentabiliteMois,"/RentabiliteMoisTest")
+api.add_resource(RentabiliteJour,"/RentabiliteJourTest")
+api.add_resource(Simulation,"/simulation")
+
+
 
 #schedule jobs
 sched = BackgroundScheduler(daemon=True)
